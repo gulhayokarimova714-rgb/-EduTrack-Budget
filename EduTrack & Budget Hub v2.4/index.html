@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduTrack & Budget Hub v2.4</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.05); }
+    .dark .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 4px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.6); }
+
+    .tab-btn.active {
+      background-color: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #059669;
+    }
+    .dark .tab-btn.active {
+      color: #34d399;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-300">
+
+  <header class="border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl text-slate-950 font-bold text-xl shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
+            EduTrack & Budget
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Ta'lim va Shaxsiy Moliya Markazi</p>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-2 bg-slate-200/60 dark:bg-slate-950/60 p-1 rounded-xl border border-slate-300/60 dark:border-slate-800">
+        <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn active px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-transparent">
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>Moliya va Byudjet</span>
+        </button>
+        <button onclick="switchTab('education')" id="tab-education" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all text-slate-600 dark:text-slate-400 border border-transparent hover:text-slate-900 dark:hover:text-white">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Darslar & Pomodoro</span>
+        </button>
+        <button onclick="switchTab('goals')" id="tab-goals" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all text-slate-600 dark:text-slate-400 border border-transparent hover:text-slate-900 dark:hover:text-white">
+          <i class="fa-solid fa-bullseye"></i>
+          <span>Maqsadlar & Motivatsiya</span>
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button onclick="exportData()" title="Eksport JSON" class="p-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs border border-slate-300 dark:border-slate-700 transition shadow-sm">
+          <i class="fa-solid fa-download"></i>
+        </button>
+        <button onclick="document.getElementById('importFile').click()" title="İmport JSON" class="p-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs border border-slate-300 dark:border-slate-700 transition shadow-sm">
+          <i class="fa-solid fa-upload"></i>
+        </button>
+        <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+        <button onclick="toggleTheme()" title="Mavzoni o'zgartirish" class="p-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs border border-slate-300 dark:border-slate-700 transition shadow-sm">
+          <i id="themeIcon" class="fa-solid fa-moon text-slate-700 dark:text-amber-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- FINANCE SECTION -->
+    <section id="section-finance" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-colors duration-300">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Umumiy Balans</span>
+            <div class="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-sm"><i class="fa-solid fa-scale-balanced"></i></div>
+          </div>
+          <div id="totalBalance" class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">0 UZS</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-colors duration-300">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jami Daromad</span>
+            <div class="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-lg text-sm"><i class="fa-solid fa-arrow-trend-up"></i></div>
+          </div>
+          <div id="totalIncome" class="text-2xl font-black text-teal-600 dark:text-teal-400 tracking-tight">+0 UZS</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-colors duration-300">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jami Xarajat</span>
+            <div class="p-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg text-sm"><i class="fa-solid fa-bolt"></i></div>
+          </div>
+          <div id="totalExpense" class="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">-0 UZS</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-colors duration-300">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-circle-plus text-emerald-500"></i>
+              <span>Yangi Tranzaksiya</span>
+            </h3>
+
+            <form id="financeForm" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">Tavsif</label>
+                <input type="text" id="txTitle" required placeholder="Masalan: Kitob sotib olish" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">Summa (UZS)</label>
+                  <input type="number" id="txAmount" required placeholder="50000" min="1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">Turi</label>
+                  <select id="txType" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+                    <option value="expense">Xarajat (-)</option>
+                    <option value="income">Daromad (+)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">Kategoriya</label>
+                <select id="txCategory" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+                  <option value="Ta'lim / Kitoblar">Ta'lim / Kitoblar</option>
+                  <option value="Oziq-ovqat">Oziq-ovqat</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Ko'ngilochar">Ko'ngilochar</option>
+                  <option value="Boshqa">Boshqa</option>
+                </select>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20">
+                Saqlash
+              </button>
+            </form>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">Xarajatlar Diagrammasi</h4>
+            <div class="relative h-44 flex items-center justify-center">
+              <canvas id="expenseChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col shadow-sm transition-colors duration-300">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-list-ul text-emerald-500"></i>
+              <span>Tranzaksiyalar Tarixi</span>
+            </h3>
+            <button onclick="clearAllTransactions()" class="text-xs text-rose-500 hover:underline">Hammasini o'chirish</button>
+          </div>
+
+          <div id="txList" class="space-y-2 flex-1 overflow-y-auto max-h-[500px] custom-scrollbar pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDUCATION SECTION -->
+    <section id="section-education" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-book text-emerald-500"></i>
+              <span>Yangi Dars / Mavzu Qo'shish</span>
+            </h3>
+            <form id="courseForm" onsubmit="handleCourseSubmit(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input type="text" id="courseTitle" required placeholder="Mavzu (masalan: JS DOM)" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+              <input type="text" id="courseSubject" required placeholder="Fan / Kurs" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition">
+              <button type="submit" class="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition">
+                Rejaga Qo'shish
+              </button>
+            </form>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-300">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-emerald-500"></i>
+              <span>O'quv Rejalari</span>
+            </h3>
+            <div id="courseList" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1"></div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-sm transition-colors duration-300">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-stopwatch text-emerald-500"></i>
+                <span>Pomodoro Taymer</span>
+              </h3>
+              <span id="pomoModeText" class="text-xs px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold rounded-md">Ish vaqti</span>
+            </div>
+
+            <div class="my-8 text-center">
+              <div id="timerDisplay" class="text-6xl font-black tracking-tight font-mono text-slate-900 dark:text-white mb-2">25:00</div>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Diqqatingizni jamlang va ishlang!</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-6">
+              <button onclick="startTimer()" class="py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition">Boshlash</button>
+              <button onclick="pauseTimer()" class="py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs border border-slate-300 dark:border-slate-700 transition">Pauza</button>
+              <button onclick="resetTimer()" class="py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs border border-slate-300 dark:border-slate-700 transition">Tiklash</button>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-200 dark:border-slate-800 pt-4">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 dark:text-slate-400">Bajarilgan Pomodorolar:</span>
+              <span id="pomoCount" class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">0 ta</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GOALS SECTION -->
+    <section id="section-goals" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm transition-colors duration-300">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-bullseye text-emerald-500"></i>
+            <span>Haftalik Shaxsiy Maqsadlar</span>
+          </h3>
+
+          <form id="goalForm" onsubmit="handleGoalSubmit(event)" class="flex gap-2">
+            <input type="text" id="goalTitle" required placeholder="Yangi maqsad (masalan: 3 ta veb sahifa yaratish)" class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500">
+            <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition">Qo'shish</button>
+          </form>
+          <div id="goalList" class="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-sm transition-colors duration-300">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-cloud-sun text-amber-500"></i>
+              <span>Toshkent Ob-havosi (Haqiqiy vaqt)</span>
+            </h3>
+            <div class="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between transition-colors duration-300">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Toshkent, O'zbekiston</h4>
+                <p id="weatherDesc" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Yuklanmoqda...</p>
+                <div id="weatherTemp" class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2">--°C</div>
+              </div>
+              <div class="text-emerald-500 dark:text-emerald-400 text-4xl">
+                <i id="weatherMainIcon" class="fa-solid fa-cloud-sun"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 transition-colors duration-300">
+            <p id="quoteText" class="text-xs text-slate-600 dark:text-slate-300 italic">"Muvaffaqiyat — bu kichik harakatlarning har kuni takrorlanishidir."</p>
+            <span id="quoteAuthor" class="block text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">— Robert Collier</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    let state = {
+      transactions: JSON.parse(localStorage.getItem('edutrack_txs')) || [
+        { id: '1', title: 'Frontend darslik', amount: 45000, type: 'expense', category: "Ta'lim / Kitoblar", date: '2026-10-10' }
+      ],
+      courses: JSON.parse(localStorage.getItem('edutrack_courses')) || [
+        { id: '1', title: 'JavaScript Fetch & Async/Await', subject: 'Frontend', completed: false }
+      ],
+      goals: JSON.parse(localStorage.getItem('edutrack_goals')) || [
+        { id: '1', title: 'HTML & CSS loyihasini yakunlash', completed: true }
+      ],
+      pomoCount: parseInt(localStorage.getItem('edutrack_pomos')) || 0
+    };
+
+    let chartInstance = null;
+    let timerInterval = null;
+    let timerSeconds = 25 * 60;
+    let isTimerRunning = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      renderFinance();
+      renderCourses();
+      renderGoals();
+      initChart();
+      fetchWeather();
+      document.getElementById('pomoCount').textContent = `${state.pomoCount} ta`;
+    });
+
+    // Theme initialization & Toggle logic
+    function initTheme() {
+      const savedTheme = localStorage.getItem('edutrack_theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        updateThemeIcon(false);
+      } else {
+        document.documentElement.classList.add('dark');
+        updateThemeIcon(true);
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('edutrack_theme', isDark ? 'dark' : 'light');
+      updateThemeIcon(isDark);
+      updateChartTheme();
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById('themeIcon');
+      if (isDark) {
+        // Dark mode faol -> bosilsa light bo'ladi (Quyosh ikonkasi)
+        icon.className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        // Light mode faol -> bosilsa dark bo'ladi (Oy ikonkasi)
+        icon.className = 'fa-solid fa-moon text-slate-700';
+      }
+    }
+
+    async function fetchWeather() {
+      try {
+        const response = await fetch("https://wttr.in/Tashkent?format=j1");
+        const data = await response.json();
+        const current = data.current_condition[0];
+        const temp = current.temp_C;
+        const desc = current.weatherDesc[0].value;
+        
+        document.getElementById('weatherTemp').textContent = `${temp}°C`;
+        document.getElementById('weatherDesc').textContent = desc;
+      } catch (err) {
+        try {
+          const res2 = await fetch("https://api.open-meteo.com/v1/forecast?latitude=41.3111&longitude=69.2797&current_weather=true");
+          const data2 = await res2.json();
+          if (data2 && data2.current_weather) {
+            document.getElementById('weatherTemp').textContent = `${Math.round(data2.current_weather.temperature)}°C`;
+            document.getElementById('weatherDesc').textContent = "Joriy ob-havo";
+          }
+        } catch (e) {
+          document.getElementById('weatherDesc').textContent = "Internetga ulanishni tekshiring";
+        }
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('edutrack_txs', JSON.stringify(state.transactions));
+      localStorage.setItem('edutrack_courses', JSON.stringify(state.courses));
+      localStorage.setItem('edutrack_goals', JSON.stringify(state.goals));
+      localStorage.setItem('edutrack_pomos', state.pomoCount.toString());
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('text-slate-600', 'dark:text-slate-400');
+      });
+      document.getElementById('section-finance').classList.add('hidden');
+      document.getElementById('section-education').classList.add('hidden');
+      document.getElementById('section-goals').classList.add('hidden');
+
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      activeBtn.classList.add('active');
+      activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+      document.getElementById(`section-${tab}`).classList.remove('hidden');
+    }
+
+    function renderFinance() {
+      const txList = document.getElementById('txList');
+      txList.innerHTML = '';
+      let income = 0, expense = 0;
+
+      if (state.transactions.length === 0) {
+        txList.innerHTML = `<p class="text-xs text-slate-500 text-center py-10">Tranzaksiyalar mavjud emas</p>`;
+      } else {
+        state.transactions.forEach(tx => {
+          if (tx.type === 'income') income += Number(tx.amount);
+          if (tx.type === 'expense') expense += Number(tx.amount);
+
+          const item = document.createElement('div');
+          item.className = 'flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl hover:border-slate-300 dark:hover:border-slate-700 transition shadow-sm';
+          const isInc = tx.type === 'income';
+          item.innerHTML = `
+            <div>
+              <p class="font-bold text-xs text-slate-800 dark:text-slate-200">${tx.title}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">${tx.category} • ${tx.date}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-xs ${isInc ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}">${isInc ? '+' : '-'}${Number(tx.amount).toLocaleString()} UZS</span>
+              <button onclick="deleteTransaction('${tx.id}')" class="text-slate-400 hover:text-rose-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          `;
+          txList.appendChild(item);
+        });
+      }
+
+      const balance = income - expense;
+      document.getElementById('totalBalance').textContent = `${balance.toLocaleString()} UZS`;
+      document.getElementById('totalIncome').textContent = `+${income.toLocaleString()} UZS`;
+      document.getElementById('totalExpense').textContent = `-${expense.toLocaleString()} UZS`;
+
+      updateChart();
+    }
+
+    function handleTransactionSubmit(e) {
+      e.preventDefault();
+      const newTx = {
+        id: Date.now().toString(),
+        title: document.getElementById('txTitle').value,
+        amount: Number(document.getElementById('txAmount').value),
+        type: document.getElementById('txType').value,
+        category: document.getElementById('txCategory').value,
+        date: new Date().toISOString().split('T')[0]
+      };
+      state.transactions.unshift(newTx);
+      saveState();
+      renderFinance();
+      document.getElementById('financeForm').reset();
+    }
+
+    function deleteTransaction(id) {
+      state.transactions = state.transactions.filter(t => t.id !== id);
+      saveState();
+      renderFinance();
+    }
+
+    function clearAllTransactions() {
+      if (confirm("Barcha tranzaksiyalarni o'chirishni xohlaysizmi?")) {
+        state.transactions = [];
+        saveState();
+        renderFinance();
+      }
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#10b981', '#14b8a6', '#f43f5e', '#eab308', '#8b5cf6'], borderWidth: 0 }] },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { 
+            legend: { 
+              position: 'bottom', 
+              labels: { 
+                color: isDark ? '#94a3b8' : '#475569', 
+                font: { size: 10 } 
+              } 
+            } 
+          } 
+        }
+      });
+    }
+
+    function updateChartTheme() {
+      if (!chartInstance) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      chartInstance.options.plugins.legend.labels.color = isDark ? '#94a3b8' : '#475569';
+      chartInstance.update();
+    }
+
+    function updateChart() {
+      if (!chartInstance) return;
+      const categories = {};
+      state.transactions.filter(t => t.type === 'expense').forEach(t => {
+        categories[t.category] = (categories[t.category] || 0) + Number(t.amount);
+      });
+      chartInstance.data.labels = Object.keys(categories);
+      chartInstance.data.datasets[0].data = Object.values(categories);
+      chartInstance.update();
+    }
+
+    function renderCourses() {
+      const courseList = document.getElementById('courseList');
+      courseList.innerHTML = '';
+      if (state.courses.length === 0) {
+        courseList.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Rejalar mavjud emas</p>`;
+        return;
+      }
+
+      state.courses.forEach(c => {
+        const item = document.createElement('div');
+        item.className = `flex items-center justify-between p-3 border rounded-xl transition shadow-sm ${c.completed ? 'bg-slate-100 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/40 opacity-60' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800'}`;
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <input type="checkbox" ${c.completed ? 'checked' : ''} onchange="toggleCourse('${c.id}')" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 accent-emerald-500 bg-white dark:bg-slate-900 cursor-pointer">
+            <div>
+              <p class="font-bold text-xs ${c.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${c.title}</p>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-800">${c.subject}</span>
+            </div>
+          </div>
+          <button onclick="deleteCourse('${c.id}')" class="text-slate-400 hover:text-rose-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>
+        `;
+        courseList.appendChild(item);
+      });
+    }
+
+    function handleCourseSubmit(e) {
+      e.preventDefault();
+      state.courses.unshift({
+        id: Date.now().toString(),
+        title: document.getElementById('courseTitle').value,
+        subject: document.getElementById('courseSubject').value,
+        completed: false
+      });
+      saveState();
+      renderCourses();
+      document.getElementById('courseForm').reset();
+    }
+
+    function toggleCourse(id) {
+      const course = state.courses.find(c => c.id === id);
+      if (course) { course.completed = !course.completed; saveState(); renderCourses(); }
+    }
+
+    function deleteCourse(id) {
+      state.courses = state.courses.filter(c => c.id !== id);
+      saveState();
+      renderCourses();
+    }
+
+    function renderGoals() {
+      const goalList = document.getElementById('goalList');
+      goalList.innerHTML = '';
+      if (state.goals.length === 0) {
+        goalList.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Maqsadlar mavjud emas</p>`;
+        return;
+      }
+      state.goals.forEach(g => {
+        const item = document.createElement('div');
+        item.className = `flex items-center justify-between p-3 border rounded-xl transition shadow-sm ${g.completed ? 'bg-slate-100 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/40 opacity-60' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800'}`;
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <input type="checkbox" ${g.completed ? 'checked' : ''} onchange="toggleGoal('${g.id}')" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 accent-emerald-500 bg-white dark:bg-slate-900 cursor-pointer">
+            <p class="font-bold text-xs ${g.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${g.title}</p>
+          </div>
+          <button onclick="deleteGoal('${g.id}')" class="text-slate-400 hover:text-rose-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>
+        `;
+        goalList.appendChild(item);
+      });
+    }
+
+    function handleGoalSubmit(e) {
+      e.preventDefault();
+      state.goals.unshift({
+        id: Date.now().toString(),
+        title: document.getElementById('goalTitle').value,
+        completed: false
+      });
+      saveState();
+      renderGoals();
+      document.getElementById('goalForm').reset();
+    }
+
+    function toggleGoal(id) {
+      const goal = state.goals.find(g => g.id === id);
+      if (goal) { goal.completed = !goal.completed; saveState(); renderGoals(); }
+    }
+
+    function deleteGoal(id) {
+      state.goals = state.goals.filter(g => g.id !== id);
+      saveState();
+      renderGoals();
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const secs = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      if (isTimerRunning) return;
+      isTimerRunning = true;
+      timerInterval = setInterval(() => {
+        if (timerSeconds > 0) {
+          timerSeconds--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          state.pomoCount++;
+          document.getElementById('pomoCount').textContent = `${state.pomoCount} ta`;
+          saveState();
+          alert('Tabriklaymiz! Pomodoro yakunlandi. 5 daqiqa dam oling.');
+          resetTimer();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() { clearInterval(timerInterval); isTimerRunning = false; }
+    function resetTimer() { pauseTimer(); timerSeconds = 25 * 60; updateTimerDisplay(); }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'edutrack_backup.json';
+      a.click();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          state = { ...state, ...JSON.parse(event.target.result) };
+          saveState(); renderFinance(); renderCourses(); renderGoals();
+          document.getElementById('pomoCount').textContent = `${state.pomoCount || 0} ta`;
+          alert("Muvaffaqiyatli yuklandi!");
+        } catch (err) { alert("Xatolik: JSON fayl yaroqsiz!"); }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
